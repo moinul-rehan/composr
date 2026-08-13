@@ -149,14 +149,12 @@ function insertTemplate(e) {
     .addUpdateContent(template.html, CardService.ContentType.MUTABLE_HTML)
     .setUpdateType(CardService.UpdateDraftBodyType.INSERT_AT_START);
 
+  var actionResponse = CardService.newUpdateDraftActionResponseBuilder()
+    .setUpdateDraftBodyAction(updateAction)
+    .build();
+
   return CardService.newComposeActionResponseBuilder()
-    .setGmailCompose(
-      CardService.newGmailCompose().setUpdateDraftActionResponse(
-        CardService.newUpdateDraftActionResponseBuilder()
-          .setUpdateDraftBodyAction(updateAction)
-          .build()
-      )
-    )
+    .setGmailCompose(actionResponse)
     .build();
 }
 
