@@ -138,23 +138,14 @@ function insertTemplate(e) {
   var apiKey = getStoredApiKey();
   var templateId = e.parameters.templateId;
 
-  var template;
-  try {
-    template = fetchTemplate(apiKey, templateId);
-  } catch (err) {
-    return buildErrorActionResponse(err);
-  }
+  var template = fetchTemplate(apiKey, templateId);
 
   var updateAction = CardService.newUpdateDraftBodyAction()
     .addUpdateContent(template.html, CardService.ContentType.MUTABLE_HTML)
     .setUpdateType(CardService.UpdateDraftBodyType.INSERT_AT_START);
 
-  var actionResponse = CardService.newUpdateDraftActionResponseBuilder()
+  return CardService.newUpdateDraftActionResponseBuilder()
     .setUpdateDraftBodyAction(updateAction)
-    .build();
-
-  return CardService.newComposeActionResponseBuilder()
-    .setGmailCompose(actionResponse)
     .build();
 }
 
@@ -167,12 +158,3 @@ function buildErrorCard(err) {
   return CardService.newCardBuilder().addSection(section).build();
 }
 
-function buildErrorActionResponse(err) {
-  return CardService.newComposeActionResponseBuilder()
-    .setNotification(
-      CardService.newNotification().setText(
-        "Failed to insert template: " + err.message
-      )
-    )
-    .build();
-}
