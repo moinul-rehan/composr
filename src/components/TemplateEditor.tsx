@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { EmailTemplate, TEMPLATE_CATEGORIES, TemplateCategory } from "@/lib/types";
-import { deleteTemplate, saveTemplate } from "@/lib/template-store";
+import { deleteTemplate, saveTemplate, sendTemplateToGmail } from "@/lib/template-store";
 import CopyButton from "@/components/CopyButton";
 
 export default function TemplateEditor({
@@ -19,18 +19,35 @@ export default function TemplateEditor({
   );
   const [html, setHtml] = useState(existing?.html ?? "");
   const [tab, setTab] = useState<"code" | "preview">("code");
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState<"success" | "error" | null>(null);
 
-  function handleSave() {
+  async function handleSave() {
     if (!name.trim() || !html.trim()) return;
-    saveTemplate({ id: existing?.id, name, subject, category, html });
+    await saveTemplate({ id: existing?.id, name, subject, category, html });
     router.push("/");
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!existing) return;
     if (!confirm(`Delete "${existing.name}"? This can't be undone.`)) return;
-    deleteTemplate(existing.id);
+    await deleteTemplate(existing.id);
     router.push("/");
+  }
+
+  async function handleSendToGmail() {
+    if (!existing) return;
+    setSending(true);
+    setSendResult(null);
+    try {
+      await sendTemplateToGmail(existing.id);
+      setSendResult("success");
+    } catch {
+      setSendResult("error");
+    } finally {
+      setSending(false);
+      setTimeout(() => setSendResult(null), 2500);
+    }
   }
 
   return (
@@ -81,6 +98,29 @@ export default function TemplateEditor({
           <h2 className="text-sm font-semibold text-neutral-900">HTML content</h2>
           <div className="flex items-center gap-2">
             <CopyButton html={html} />
+            {existing && (
+              <button
+                type="button"
+                onClick={handleSendToGmail}
+                disabled={sending}
+                title={
+                  sendResult === "success"
+                    ? "Draft created!"
+                    : sendResult === "error"
+                      ? "Failed to create draft"
+                      : "Send to Gmail"
+                }
+                className="inline-flex items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {sending
+                  ? "Sending…"
+                  : sendResult === "success"
+                    ? "Draft created"
+                    : sendResult === "error"
+                      ? "Failed"
+                      : "Send to Gmail"}
+              </button>
+            )}
             <div className="flex rounded-md border border-neutral-300 p-0.5 text-xs">
               <button
                 onClick={() => setTab("code")}

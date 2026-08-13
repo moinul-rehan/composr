@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import TemplateEditor from "@/components/TemplateEditor";
+import AuthGate from "@/components/AuthGate";
 import { getTemplate } from "@/lib/template-store";
 import { EmailTemplate } from "@/lib/types";
 
@@ -23,15 +24,19 @@ function EditTemplateInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const id = searchParams.get("id");
-  const [template, setTemplate] = useState<EmailTemplate | null | undefined>(undefined);
+  const [template, setTemplate] = useState<EmailTemplate | null | undefined>(
+    id ? undefined : null
+  );
 
   useEffect(() => {
-    if (!id) {
-      setTemplate(null);
-      return;
-    }
-    const found = getTemplate(id);
-    setTemplate(found ?? null);
+    if (!id) return;
+    let cancelled = false;
+    getTemplate(id).then((found) => {
+      if (!cancelled) setTemplate(found ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   if (template === undefined) {
@@ -69,8 +74,10 @@ function EditTemplateInner() {
 
 export default function EditTemplatePage() {
   return (
-    <Suspense fallback={null}>
-      <EditTemplateInner />
-    </Suspense>
+    <AuthGate>
+      <Suspense fallback={null}>
+        <EditTemplateInner />
+      </Suspense>
+    </AuthGate>
   );
 }

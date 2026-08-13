@@ -1,8 +1,10 @@
 import Link from "next/link";
 import TemplateList from "@/components/TemplateList";
+import AuthGate from "@/components/AuthGate";
 
 export default function Home() {
   return (
+    <AuthGate>
     <div className="mx-auto w-full max-w-6xl px-6 py-12">
       <div className="mb-10 flex flex-col gap-4 border-b border-neutral-200 pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -31,5 +33,6 @@ export default function Home() {
       </div>
       <TemplateList />
     </div>
+    </AuthGate>
   );
 }

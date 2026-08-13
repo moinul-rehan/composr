@@ -1,8 +1,10 @@
 import Link from "next/link";
 import TemplateEditor from "@/components/TemplateEditor";
+import AuthGate from "@/components/AuthGate";
 
 export default function NewTemplatePage() {
   return (
+    <AuthGate>
     <div className="mx-auto w-full max-w-4xl px-6 py-12">
       <Link
         href="/"
@@ -16,5 +18,6 @@ export default function NewTemplatePage() {
       <h1 className="mb-6 text-2xl font-semibold tracking-tight text-neutral-900">New template</h1>
       <TemplateEditor />
     </div>
+    </AuthGate>
   );
 }

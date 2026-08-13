@@ -20,18 +20,20 @@ export default function TemplateList() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setTemplates(listTemplates());
-    setLoaded(true);
+    listTemplates().then((t) => {
+      setTemplates(t);
+      setLoaded(true);
+    });
   }, []);
 
-  function addSample() {
-    saveTemplate({
+  async function addSample() {
+    await saveTemplate({
       name: "Follow-up after no reply",
       category: "Follow-up",
       subject: "Following up on my last email",
       html: SAMPLE_FOLLOWUP_HTML,
     });
-    setTemplates(listTemplates());
+    setTemplates(await listTemplates());
   }
 
   if (!loaded) {
