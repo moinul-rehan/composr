@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { resolveUserId } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 
 async function getOwnedTemplate(id: string, userId: string) {
@@ -9,16 +9,16 @@ async function getOwnedTemplate(id: string, userId: string) {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await resolveUserId(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
-  const template = await getOwnedTemplate(id, session.user.id);
+  const template = await getOwnedTemplate(id, userId);
   if (!template) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -30,13 +30,13 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await resolveUserId(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
-  const existing = await getOwnedTemplate(id, session.user.id);
+  const existing = await getOwnedTemplate(id, userId);
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -53,16 +53,16 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await resolveUserId(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
-  const existing = await getOwnedTemplate(id, session.user.id);
+  const existing = await getOwnedTemplate(id, userId);
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

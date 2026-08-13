@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { signIn, signOut, useSession } from "next-auth/react";
 
 export default function HeaderAuth() {
@@ -23,6 +24,12 @@ export default function HeaderAuth() {
   return (
     <div className="flex items-center gap-3">
       <span className="text-xs text-neutral-500">{session.user?.email}</span>
+      <Link
+        href="/settings"
+        className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+      >
+        Settings
+      </Link>
       <button
         onClick={() => signOut()}
         className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50"

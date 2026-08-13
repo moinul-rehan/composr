@@ -15,6 +15,7 @@ model User {
   image         String?
   accounts      Account[]
   templates     Template[]
+  apiKey        ApiKey?
 }
 
 model Account {
@@ -47,4 +48,12 @@ model Template {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  key       String   @unique
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

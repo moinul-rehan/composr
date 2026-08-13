@@ -1,0 +1,34 @@
+{
+  "timeZone": "Etc/UTC",
+  "dependencies": {},
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/gmail.addons.execute",
+    "https://www.googleapis.com/auth/gmail.addons.current.action.compose",
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/userinfo.email"
+  ],
+  "urlFetchWhitelist": [
+    "https://composrr.netlify.app/"
+  ],
+  "gmail": {
+    "name": "Composr",
+    "logoUrl": "https://www.gstatic.com/images/icons/material/system/2x/mail_black_24dp.png",
+    "primaryColor": "#171717",
+    "secondaryColor": "#171717",
+    "authorizationCheckFunction": "onAuthorize",
+    "composeTrigger": {
+      "selectActions": [
+        {
+          "text": "Insert Composr template",
+          "runFunction": "onComposeTrigger"
+        }
+      ],
+      "draftAccess": "METADATA"
+    },
+    "homepageTrigger": {
+      "runFunction": "onHomepage"
+    }
+  }
+}
