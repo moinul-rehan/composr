@@ -1,81 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Composr
 
-## Backend setup (Google sign-in, Postgres storage, Gmail drafts)
+Composr is a dashboard for managing HTML email templates and getting them into Gmail with a single click — either copied to the clipboard, pushed as a Gmail draft via the Gmail API, or inserted directly into an open compose window through a companion Gmail Add-on.
 
-Composr stores templates in Postgres (Neon) per signed-in user, and can push a template into Gmail as a draft via the Gmail API. You need a Google Cloud OAuth client and a Neon database before running the app.
+## Features
 
-### 1. Create a Google Cloud OAuth client
+- Create, edit, and organize HTML email templates by category
+- Live preview alongside the raw HTML editor
+- Google sign-in; templates are stored per user in Postgres
+- **Copy template** — copies the HTML straight to the clipboard for pasting into Gmail
+- **Send to Gmail** — creates a real Gmail draft via the Gmail API
+- **Gmail Add-on** (`gmail-addon/`) — lets you insert a template directly into an open compose draft from Gmail's own three-dot menu, without leaving Gmail
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/) and create a new project (or reuse one).
-2. In **APIs & Services → Library**, enable the **Gmail API**.
-3. In **APIs & Services → OAuth consent screen**:
-   - Choose **External** user type (unless you have a Workspace org).
-   - Fill in app name/support email.
-   - Under **Scopes**, add `https://www.googleapis.com/auth/gmail.compose`.
-   - Under **Test users** (while the app is in "Testing" mode), add your own Google account email — only test users can sign in until the app is published/verified.
-4. In **APIs & Services → Credentials**, create an **OAuth client ID** of type **Web application**.
-   - Authorized redirect URIs: `http://localhost:3000/api/auth/callback/google` for local dev, plus your production URL (e.g. `https://your-site.netlify.app/api/auth/callback/google`) once deployed.
-5. Copy the generated **Client ID** and **Client secret**.
+## Tech stack
 
-### 2. Create a Neon Postgres database
+- [Next.js](https://nextjs.org) (App Router) + React + TypeScript
+- [Tailwind CSS](https://tailwindcss.com)
+- [Auth.js](https://authjs.dev) (NextAuth v5) with the Google provider
+- [Prisma](https://www.prisma.io) + Postgres (developed against [Neon](https://neon.tech))
+- [googleapis](https://github.com/googleapis/google-api-nodejs-client) for Gmail draft creation
+- Deployed on [Netlify](https://www.netlify.com) via `@netlify/plugin-nextjs`
+- Gmail Add-on built with [Google Apps Script](https://developers.google.com/apps-script)
 
-1. Create a project at [neon.tech](https://neon.tech).
-2. Copy the connection string (with `?sslmode=require`) from the Neon dashboard.
+## Project structure
 
-### 3. Configure environment variables
-
-Copy `.env.example` to `.env` and fill in:
-
-```bash
-DATABASE_URL="<your Neon connection string>"
-AUTH_SECRET="<run: npx auth secret>"
-AUTH_GOOGLE_ID="<Google OAuth client ID>"
-AUTH_GOOGLE_SECRET="<Google OAuth client secret>"
+```
+src/
+  app/
+    api/
+      auth/[...nextauth]/     Auth.js route handler
+      templates/               Template CRUD + send-to-gmail routes
+      api-keys/                Personal API key for the Gmail Add-on
+    templates/new, templates/edit   Template editor pages
+    settings/                  API key management page
+    page.tsx                   Dashboard (template list)
+  components/                  UI components (editor, list, auth gate, etc.)
+  lib/                         Prisma client, Auth.js config, Gmail helper, template-store API client
+prisma/
+  schema.prisma                 Database schema
+  migrations/                   Prisma migration history
+gmail-addon/                    Standalone Google Apps Script project (see its own README)
 ```
 
-### 4. Run database migrations
+## Prerequisites
+
+- Node.js 20+
+- A Postgres database (e.g. a free [Neon](https://neon.tech) project)
+- A Google Cloud project with the Gmail API enabled and an OAuth client
+
+## Environment variables
+
+Copy `.env.example` to `.env` and fill in your own values:
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | Postgres connection string (e.g. from Neon), including `?sslmode=require` |
+| `AUTH_SECRET` | Random secret used to sign session tokens — generate with `npx auth secret` |
+| `AUTH_GOOGLE_ID` | OAuth client ID from Google Cloud Console |
+| `AUTH_GOOGLE_SECRET` | OAuth client secret from Google Cloud Console |
+| `AUTH_URL` | The app's public URL (e.g. `https://your-site.netlify.app`) — required in production so Auth.js resolves the correct OAuth callback |
+
+None of these values are committed to the repo; `.env` is gitignored.
+
+## Setting up Google OAuth + Gmail API access
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) and create a project (or reuse one).
+2. **APIs & Services → Library** → enable the **Gmail API**.
+3. **APIs & Services → OAuth consent screen** (or the newer "Google Auth Platform" UI):
+   - User type: **External**
+   - Fill in app name and support email
+   - **Scopes** → add `https://www.googleapis.com/auth/gmail.compose`
+   - **Test users** → add the Google account(s) you'll sign in with, while the app is in "Testing" mode
+4. **APIs & Services → Credentials → Create Credentials → OAuth client ID**:
+   - Application type: **Web application**
+   - Authorized redirect URIs:
+     - `http://localhost:3000/api/auth/callback/google` (local dev)
+     - `https://<your-deployed-domain>/api/auth/callback/google` (production)
+5. Copy the generated **Client ID** and **Client secret** into your `.env`.
+
+## Database setup
+
+1. Create a Postgres database (e.g. a Neon project) and copy its connection string into `DATABASE_URL`.
+2. Apply the schema:
+
+   ```bash
+   npx prisma migrate dev
+   ```
+
+   This creates the `User`, `Account`, `Template`, and `ApiKey` tables.
+
+## Running locally
 
 ```bash
-npx prisma migrate dev --name init
-```
-
-This creates the `User`, `Account`, and `Template` tables in your Neon database.
-
-### 5. Deploying
-
-The app now runs as a full Next.js server (API routes + auth), not a static export. On Netlify this is handled by the `@netlify/plugin-nextjs` plugin already configured in `netlify.toml`. Set the same environment variables (`DATABASE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`) in your Netlify site's environment settings, and add the production callback URL to the Google OAuth client's authorized redirect URIs.
-
-## Getting Started
-
-First, run the development server:
-
-```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). `npm install` runs `prisma generate` automatically via its `postinstall` script, so the Prisma client always matches the current schema.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The app runs as a full Next.js server (SSR + API routes), not a static export. On Netlify this is handled by `@netlify/plugin-nextjs`, already configured in `netlify.toml` (`publish = ".next"`). To deploy:
 
-## Learn More
+1. Connect the repo to a Netlify site.
+2. Set the environment variables from the table above in the site's **Environment variables** settings, using your production values (including `AUTH_URL` set to the site's own URL).
+3. Add the production callback URL to the Google OAuth client's authorized redirect URIs.
+4. Trigger a deploy.
 
-To learn more about Next.js, take a look at the following resources:
+## Gmail Add-on
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`gmail-addon/` is a self-contained Google Apps Script project — it is not built or deployed by Netlify. It talks to this app's `/api/templates` endpoints over HTTPS using a personal API key (generated from the `/settings` page) instead of a browser session. See [`gmail-addon/README.md`](gmail-addon/README.md) for full setup instructions.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Command | Description |
+|---|---|
+| `npm run dev` | Start the local dev server |
+| `npm run build` | Production build |
+| `npm run start` | Run the production build locally |
+| `npm run lint` | Run ESLint |
+| `npx prisma migrate dev` | Apply pending database migrations |
+| `npx prisma studio` | Browse the database with Prisma's GUI |
